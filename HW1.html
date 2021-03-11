@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	
+</style> 
+</head>
+<body> 
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script type = "module">
+
+
+import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js';
+import { MTLLoader } from 'https://unpkg.com/three/examples/jsm/loaders/MTLLoader.js';
+import { OBJLoader } from 'https://unpkg.com/three/examples/jsm/loaders/OBJLoader.js';
+
+
+var renderer, scene, camera, controls;
+
+init();
+animate();
+
+function init() {
+
+	scene = new THREE.Scene();
+  	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
+ 	camera.position.z = 200;
+  	camera.position.y = 50;
+  
+  	renderer = new THREE.WebGLRenderer();
+  	renderer.setSize(window.innerWidth, window.innerHeight);
+  	renderer.setClearColor(0x888888);
+
+  	document.body.appendChild(renderer.domElement);
+  
+  	let controls = new OrbitControls(camera, renderer.domElement);
+  	controls.autoRotate = true;
+  
+  /////////////////////////////////////////////////////////////////////
+
+  
+}
+
+function animate() {
+	requestAnimationFrame(animate);
+  	renderer.render(scene, camera);
+
+}
+
+
+
+</script>
+
+</body>
+</html>
