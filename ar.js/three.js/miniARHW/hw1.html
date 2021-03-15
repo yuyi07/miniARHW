@@ -22,7 +22,7 @@ var renderer, scene, camera;
 var stats;
 var arToolKitSource, arToolKitContext;
 var markerHiro;
-
+var status = 0;
 var theta = 0;
 
 init();
@@ -121,12 +121,11 @@ function addMarkerHiro(){
 	markerRoot.add (mesh);
 */
 
-	var cylinder = new THREE.Mesh(new THREE.CylinderGeometry (0.5, 0.5, 0.5, 32), new THREE.MeshNormalMaterial());
-
-	var ball = new THREE.Mesh (new THREE.SphereGeometry (0.2, 20,20), new THREE.MeshNormalMaterial());
+	var cylinder = new THREE.Mesh(new THREE.CylinderGeometry (0.25, 0.25, 0.5, 32), new THREE.MeshNormalMaterial());
+	var ball = new THREE.Mesh (new THREE.SphereGeometry (0.1, 20,20), new THREE.MeshNormalMaterial());
 	markerRoot.add (ball, cylinder);
 	ball.position.y = 0.1;
-	
+	cylinder.position.set (0, 0.25, 0);
 	var grid = new THREE.GridHelper (1, 10, 'red', 'white');
 	markerRoot.add (grid);
 			
@@ -142,7 +141,20 @@ function animate() {
 
 	theta += 0.01;
 	markerHiro.children[0].position.set (0.5*Math.sin(theta), 0.1, 0.5*Math.cos(theta));
-	markerHiro.children[1].position.set (0, Math.sin(theta), 0);
+	
+	if(status == 0)
+	{
+		markerHiro.children[1].position.y +=0.01;
+		if(markerHiro.children[1].position.y >= 0.75)
+			status = 1;
+	}
+		
+	else if(status  == 1){
+		markerHiro.children[1].position.y -=0.01;
+		if(markerHiro.children[1].position.y <= 0.25)
+		status = 0;
+	}	
+	console.log(markerHiro.children[1].position.y);
 	renderer.render (scene, camera);	
 }
 
