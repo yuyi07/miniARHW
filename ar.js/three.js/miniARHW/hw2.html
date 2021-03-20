@@ -42,7 +42,6 @@ var omega = 0;
 var isActive = false;
 var turn;
 var pointer;
-var color = 0;
 
 init();
 animate();
@@ -201,19 +200,16 @@ function turning(){
   var totalAngle = (angle%(Math.PI*2));
   if(omega == 0 && turn == false){
     if(totalAngle >= 0 && totalAngle < 2.0944){
-      //color = 1;
       //console.log("blue");
       $('#text').css ('color', 'blue'); 
       $('#text').text('Blue');
     }
     else if(totalAngle >= 2.0944 && totalAngle < 4.1887){
-      //color = 2;
       //console.log("red");
       $('#text').css ('color', 'FireBrick'); 
       $('#text').text('Red');
     }
     else if(totalAngle >= 4.1887 && totalAngle < 6.2831){
-      //color = 3;
       $('#text').css ('color', 'Gold');
       $('#text').text('Yellow');  
       //console.log("yellow");
