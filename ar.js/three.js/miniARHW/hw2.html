@@ -157,19 +157,19 @@ function addMarkerHiro(){
   group = new THREE.Group();
   //scene.add (group);
    
-  let geometry0 = new THREE.CircleGeometry( 2.69, 32, Math.PI/2, 
+  let geometry0 = new THREE.CircleGeometry( 1.92, 32, Math.PI/2, 
   2*Math.PI/3);
   let material0 = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide} );
   let circle0 = new THREE.Mesh( geometry0, material0 );
   group.add( circle0 );  
 
-  let geometry1 = new THREE.CircleGeometry( 2.69, 32, Math.PI/2 + 2/3*Math.PI, 
+  let geometry1 = new THREE.CircleGeometry( 1.92, 32, Math.PI/2 + 2/3*Math.PI, 
   2*Math.PI/3);
   let material1 = new THREE.MeshBasicMaterial( { color: 0xff0000 , side: THREE.DoubleSide} );
   let circle1 = new THREE.Mesh( geometry1, material1 );
   group.add( circle1 );  
     
-  let geometry2 = new THREE.CircleGeometry( 2.69, 32, Math.PI/2 - 2/3*Math.PI, 
+  let geometry2 = new THREE.CircleGeometry( 1.92, 32, Math.PI/2 - 2/3*Math.PI, 
   2*Math.PI/3);
   let material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff , side: THREE.DoubleSide} );
   let circle2 = new THREE.Mesh( geometry2, material2 );
@@ -179,8 +179,8 @@ function addMarkerHiro(){
 
   markerRoot.add(group);
 
-  pointer = new THREE.Mesh(new THREE.TetrahedronGeometry( 0.32, 0), new THREE.MeshBasicMaterial({color:0x000000}));
-  pointer.position.set (0, 0, -2.59);
+  pointer = new THREE.Mesh(new THREE.TetrahedronGeometry( 0.12, 0), new THREE.MeshBasicMaterial({color:0x000000}));
+  pointer.position.set (0, 0, -1.877);
   pointer.rotation.y = -Math.PI/4;
   pointer.rotation.x = Math.PI/5;
   markerRoot.add (pointer);
