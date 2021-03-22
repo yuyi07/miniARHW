@@ -158,7 +158,7 @@ function addMarkerHiro(){
    
   let geometry0 = new THREE.CircleGeometry( 1.92, 32, Math.PI/2, 
   2*Math.PI/3);
-  let material0 = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide} );
+  let material0 = new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide} );
   let circle0 = new THREE.Mesh( geometry0, material0 );
   group.add( circle0 );  
 
@@ -198,7 +198,7 @@ function clamp (x, xLo, xHi) {
 
 function turning(){
   var totalAngle = (angle%(Math.PI*2));
-  if(omega == 0 && turn == false){
+  if(turn == false){
     if(totalAngle >= 0 && totalAngle < 2.0944){
       //console.log("blue");
       $('#text').css ('color', 'blue'); 
@@ -210,8 +210,8 @@ function turning(){
       $('#text').text('Red');
     }
     else if(totalAngle >= 4.1887 && totalAngle < 6.2831){
-      $('#text').css ('color', 'Gold');
-      $('#text').text('Yellow');  
+      $('#text').css ('color', 'DarkGreen');
+      $('#text').text('Green');  
       //console.log("yellow");
     }
   }
