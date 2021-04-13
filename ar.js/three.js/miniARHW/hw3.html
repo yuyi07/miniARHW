@@ -188,6 +188,9 @@ console.log ('iOS: ' + _iOSDevice)
 	
 	if (_iOSDevice) {
     	window.addEventListener('touchstart', onTouchStart, false);
+		document.addEventListener("click", function(event){
+    myMenu.style.display = "none";
+});
     	// touchend ... use the same callback as mouseup
 	} else {
 		window.addEventListener ('mousedown', onMouseDown, false);
@@ -384,7 +387,7 @@ function onTouchStart (event) {
 		event.preventDefault();
 		let ndcX = ( event.touches[0].pageX / window.innerWidth ) * 2 - 1;
 		let ndcY = - ( event.touches[0].pageY / window.innerHeight ) * 2 + 1;
-	
+
 		pickCompute (ndcX, ndcY);		
 		
 	}	
