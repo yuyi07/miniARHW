@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>
+#heading{
+	 position:absolute;
+	 text-align:center;
+	 width:100vw;
+   
+}		
+</style> 
+<body> 
+<!-- three.js library -->
+<script src='../examples/vendor/three.js/build/three.min.js'></script>
+<script src="../examples/vendor/three.js/examples/js/libs/stats.min.js"></script>
+<!-- ar.js -->
+<script src="../build/ar.js"></script>
+<script>THREEx.ArToolkitContext.baseURL = '../'</script>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'>
+<div style='position: absolute; top: 10px; width:100%; text-align: center; z-index: 1;'>
+<a href="https://github.com/jeromeetienne/AR.js/" target="_blank">AR.js</a>
+	 - three.js<br>
+Minimal Version
+<div id= "heading">
+
+  <p id = "text" style = "color :black"> Which color?? </p>
+</div>
+</div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
+
+class Button {
+	constructor (cx, cy, size, colorString = 'yellow', map = null){
+		this.centerX = cx;  // HUD-coord
+		this.centerY = cy;
+		this.size = size;  // circle radius
+		let material = new THREE.MeshBasicMaterial({color: colorString, transparent: true, opacity:0.7});
+		if (map) 
+		   material.map = map;
+		this.mesh = new THREE.Mesh (new THREE.CircleGeometry (size, 36), material );
+	    this.mesh.position.set (cx, cy, 0);
+	}
+	
+	setLocation (lx, ly) { // 2D-HUD 
+	    this.mesh.position.set (lx, ly, 0);
+	}
+	
+	d2To (v) { // 2-norm
+		return Math.sqrt ( (v[0]-this.centerX)*(v[0]-this.centerX) 
+				+ (v[1]-this.centerY)*(v[1]-this.centerY) );
+	}
+}
+
+var scene, camera, sceneHUD, cameraHUD;
+var stats;
+var mesh, button, markerRoot; 
+var arToolkitSource, arToolKitContext, cubeSpin = false;
+var markerHiro, button1;
+
+var angle = 0;
+var group;
+var omega = 0;  
+var isActive = false;
+var turn;
+var pointer;
+var whRatio, halfW, halfH;
+var _iOSDevice;
+
+init();
+animate();
+
+
+function init() {
+
+// https://stackoverflow.com/questions/9038625/detect-if-device-is-ios?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+let _iOSDevice = !!navigator.platform.match(/iPhone|iPod|iPad/);
+
+console.log ('iOS: ' + _iOSDevice)
+
+  // init renderer
+	renderer	= new THREE.WebGLRenderer({
+		// antialias	: true,
+		alpha: true
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	// renderer.setPixelRatio( 1/2 );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	renderer.autoClear = false;
+
+// width/height ratio
+	whRatio = window.innerWidth/window.innerHeight;
+	console.log ('[onInit] width: ' + window.innerWidth)	
+	console.log ('[onInit] height: ' + window.innerHeight)	
+
+
+	// init scene and camera
+	scene	= new THREE.Scene();
+	
+	// Create a BASIC camera
+	camera = new THREE.Camera();
+	scene.add(camera);
+	
+	// for HUD scene
+	sceneHUD = new THREE.Scene();
+	
+	halfH = 10;
+	halfW = halfH * whRatio;
+	
+	cameraHUD = new THREE.OrthographicCamera (-halfW,halfW, halfH,-halfH, -10,10);
+	///////////////////////////////////////////////////////
+
+	let loader = new THREE.TextureLoader();
+	loader.setCrossOrigin(''); // 重要！
+	loader.load(
+    	// resource URL
+    	'https://i.imgur.com/VOttfBV.png',
+
+    	// Function when resource is loaded
+    	function(texture) {
+      		console.log ('texture loaded ...')
+			// texture load完，再建button
+			var buttonSize = halfH/3; // radius
+			button1 = new Button (halfW/2, -halfH/2, buttonSize, 'white', texture); 
+			sceneHUD.add (button1.mesh);
+    	},
+
+  	);
+	//button2 = new Button (-halfW/2, -halfH/2, halfH/3, 'cyan'); 
+	//sceneHUD.add (button2.mesh);
+
+	////////////////////////////////////////////////////////////////////////////////
+	//          handle arToolkitSource
+	////////////////////////////////////////////////////////////////////////////////
+
+	arToolkitSource = new THREEx.ArToolkitSource({
+		// to read from the webcam 
+		sourceType : 'webcam',
+	})
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	})
+	
+	// handle resize
+	window.addEventListener('resize', function(){
+		onResize()
+	})
+	function onResize(){
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if( arToolkitContext.arController !== null ){
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+	////////////////////////////////////////////////////////////////////////////////
+	//          initialize arToolkitContext
+	////////////////////////////////////////////////////////////////////////////////
+	
+	arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: THREEx.ArToolkitContext.baseURL + '../data/data/camera_para.dat',
+		detectionMode: 'mono',
+		maxDetectionRate: 30,
+		canvasWidth: 80*3,
+		canvasHeight: 60*3,
+	})
+	// initialize it
+	arToolkitContext.init(function onCompleted(){
+		// copy projection matrix to camera
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	})
+
+	markerRoot = makeRoot();
+	scene.add(markerRoot);
+
+
+	stats = new Stats();
+	document.body.appendChild( stats.dom );
+	
+	// handle resize: can be iPAD change orientation
+	window.addEventListener('resize', function(){
+		onResize()
+	})
+	
+	if (_iOSDevice) {
+    	window.addEventListener('touchstart', onTouchStart, false);
+    	// touchend ... use the same callback as mouseup
+	} else {
+		window.addEventListener ('mousedown', onMouseDown, false);
+		window.addEventListener ('mouseup', onMouseUp, false);
+    }
+
+}
+
+function makeRoot() {
+	
+	let markerRoot = new THREE.Group();
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+		type : 'pattern',
+		patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.hiro'
+		// patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji'
+	})
+
+	group = new THREE.Group();
+  //scene.add (group);
+   
+  let geometry0 = new THREE.CircleGeometry( 1, 32, Math.PI/2, 
+  2*Math.PI/3);
+  let material0 = new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide} );
+  let circle0 = new THREE.Mesh( geometry0, material0 );
+  group.add( circle0 );  
+
+  let geometry1 = new THREE.CircleGeometry( 1, 32, Math.PI/2 + 2/3*Math.PI, 
+  2*Math.PI/3);
+  let material1 = new THREE.MeshBasicMaterial( { color: 0xff0000 , side: THREE.DoubleSide} );
+  let circle1 = new THREE.Mesh( geometry1, material1 );
+  group.add( circle1 );  
+    
+  let geometry2 = new THREE.CircleGeometry( 1, 32, Math.PI/2 - 2/3*Math.PI, 
+  2*Math.PI/3);
+  let material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff , side: THREE.DoubleSide} );
+  let circle2 = new THREE.Mesh( geometry2, material2 );
+
+  group.add( circle2 );  
+  group.rotation.x = -Math.PI/2;
+  group.position.set(0, 0, 0);
+  markerRoot.add(group);
+
+  pointer = new THREE.Mesh(new THREE.CircleGeometry( 0.15, 32, 0.95, 1), new THREE.MeshBasicMaterial({color:0x000000, side: THREE.DoubleSide}));
+  pointer.position.set (0, 0.01, -0.97);
+  
+  pointer.rotation.x = -Math.PI/2;
+  //pointer.rotation.z = -Math.PI/4;
+  markerRoot.add (pointer);
+  
+	return markerRoot;
+}
+
+
+
+
+function clamp (x, xLo, xHi) {
+	if (x < xLo) return xLo;
+  if (x > xHi) return xHi;
+  else return x;
+}
+
+function turning(){
+  var totalAngle = (angle%(Math.PI*2));
+  if(turn == false){
+    if(totalAngle >= 0 && totalAngle < 2.0944){
+      //console.log("blue");
+      $('#text').css ('color', 'blue'); 
+      $('#text').text('Blue');
+    }
+    else if(totalAngle >= 2.0944 && totalAngle < 4.1887){
+      //console.log("red");
+      $('#text').css ('color', 'FireBrick'); 
+      $('#text').text('Red');
+    }
+    else if(totalAngle >= 4.1887 && totalAngle < 6.2831){
+      $('#text').css ('color', 'DarkGreen');
+      $('#text').text('Green');  
+      //console.log("yellow");
+    }
+  }
+  //console.log(color);
+}
+
+function animate() {
+
+  stats.update();
+  requestAnimationFrame (animate);
+
+	renderer.clear();
+	renderer.render (scene, camera);
+  if( arToolkitSource.ready === false )	return
+	arToolkitContext.update( arToolkitSource.domElement )
+
+	button1.mesh.material.visible = markerRoot.visible;
+
+	
+	
+	renderer.render (sceneHUD, cameraHUD);
+  
+  var dt = 0.15;
+  var maxOmega = 5;
+  if (cubeSpin) {
+  	omega = omega + 3*dt;  
+    
+  } else {
+  	omega = omega - 1*dt;    
+  }
+
+    omega = clamp (omega, 0, maxOmega);
+  
+  angle += omega*dt;
+		
+  markerRoot.children[1].position.set(Math.sin(angle)*0.88, 0.01, -0.88*Math.cos(angle));
+  markerRoot.children[1].rotation.z = -angle;
+  turning();
+  
+}
+
+function onResize(){
+	arToolkitSource.onResizeElement()	
+	arToolkitSource.copyElementSizeTo(renderer.domElement)	
+	if( arToolkitContext.arController !== null ){
+		arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)	
+	}	
+	
+	//$('#ratio').text ('resize: width: ' + window.innerWidth + ' height: ' + window.innerHeight)
+	// use 'ratio' to display down/up
+	
+	whRatio = window.innerWidth/window.innerHeight;
+		console.log ('[onResize] width: ' + renderer.domElement.width)	
+		console.log ('[onResize] height: ' + renderer.domElement.height)	
+		console.log ('[onResize] whRatio: ' + whRatio)	
+	
+	 halfW = halfH * whRatio;
+	cameraHUD.left = -halfW;
+	cameraHUD.right = halfW;
+	cameraHUD.top = halfH;
+	cameraHUD.bottom = -halfH;
+	cameraHUD.updateProjectionMatrix();
+	// ideally, this is needed, 
+	// but commented out gives better result (in Chrome emulator)
+	
+	
+/*	
+  AR world resize: controlled by arToolKit
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+*/  
+ // renderer.setSize(window.innerWidth, window.innerHeight);
+//	renderer.setSize (renderer.domElement.width, renderer.domElement.height)	
+}
+	
+function pickCompute (ndcX, ndcY) {
+
+	// use 2D algorithm, in HUD-coord
+	let HUD_coord = [halfW*ndcX, halfH*ndcY]
+		
+	let dist = button1.d2To (HUD_coord);	
+	let printStr = [ dist.toFixed(2), HUD_coord[0].toFixed(2), HUD_coord[1].toFixed(2) ];
+	
+	$('#touch').text ( `[${printStr[0]}]: (${printStr[1]}, ${printStr[2]})`);
+	
+	if (dist < button1.size) {  // distance VS. radius
+		console.log ('picked')
+		cubeSpin = !cubeSpin;
+	} else {
+		console.log ('no hit')
+	}
+
+}
+
+function onMouseUp (event) {
+	// do nothing yet ...
+	down = false;
+	turn = false;
+}
+
+function onMouseDown (event) {
+	console.log ('in mouse down')
+	event.preventDefault();
+	let ndcX = (event.clientX / window.innerWidth) * 2 - 1;
+	let ndcY = -(event.clientY / window.innerHeight) * 2 + 1;
+
+	pickCompute (ndcX, ndcY);	
+	turn = true;
+	down = true;
+}	
+
+function onTouchStart (event) {
+	console.log ('in touch start')
+
+   if (event.touches.length == 1) {
+        
+		event.preventDefault();
+		let ndcX = ( event.touches[0].pageX / window.innerWidth ) * 2 - 1;
+		let ndcY = - ( event.touches[0].pageY / window.innerHeight ) * 2 + 1;
+	
+		pickCompute (ndcX, ndcY);		
+		
+	}	
+}	
+
+
+
+</script>
+
+</body>
