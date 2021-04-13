@@ -188,7 +188,7 @@ console.log ('iOS: ' + _iOSDevice)
 	
 	if (_iOSDevice) {
     	window.addEventListener('touchstart', onTouchStart, false);
-		window.addEventListener('touchstart', onTouchEnd, false);
+		window.addEventListener('touchend', onTouchEnd, false);
     	// touchend ... use the same callback as mouseup
 	} else {
 		window.addEventListener ('mousedown', onMouseDown, false);
@@ -387,24 +387,16 @@ function onTouchStart (event) {
 		let ndcY = - ( event.touches[0].pageY / window.innerHeight ) * 2 + 1;
 	
 		pickCompute (ndcX, ndcY);		
-		turn = true;
-		down = true;
 	}	
 }	
-function onTouchEnd (event) {
-	console.log ('in touch start')
 
-   if (event.touches.length == 1) {
-        
-		event.preventDefault();
-		let ndcX = ( event.touches[0].pageX / window.innerWidth ) * 2 - 1;
-		let ndcY = - ( event.touches[0].pageY / window.innerHeight ) * 2 + 1;
-	
-		pickCompute (ndcX, ndcY);		
-		cubeSpin = false;
-		turn = false;
-	}	
-}	
+function onTouchEnd(){
+	event.preventDefault();
+	if(turn){
+		turn = !turn;
+	}
+
+}
 
 
 
