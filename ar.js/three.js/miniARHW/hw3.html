@@ -290,7 +290,7 @@ function animate() {
   
   var dt = 0.15;
   var maxOmega = 5;
-  if (cubeSpin) {
+  if (turn) {
   	omega = omega + 3*dt;  
     
   } else {
@@ -362,7 +362,7 @@ function pickCompute (ndcX, ndcY) {
 
 function onMouseUp (event) {
 	// do nothing yet ...
-	cubeSpin = false;
+	//cubeSpin = false;
 	turn = false;
 }
 
@@ -374,7 +374,7 @@ function onMouseDown (event) {
 
 	pickCompute (ndcX, ndcY);	
 	turn = true;
-	down = true;
+	//down = true;
 }	
 
 function onTouchStart (event) {
