@@ -53,7 +53,7 @@ class Button {
 
 var scene, camera, sceneHUD, cameraHUD;
 var stats;
-var mesh, button, markerRoot; 
+var mesh, markerRoot; 
 var arToolkitSource, arToolKitContext, cubeSpin = false;
 var markerHiro, button1;
 
@@ -104,6 +104,11 @@ console.log ('iOS: ' + _iOSDevice)
 	// Create a BASIC camera
 	camera = new THREE.Camera();
 	scene.add(camera);
+
+	//light
+	var pointLight = new THREE.PointLight (0xffffff);
+  	pointLight.position.set (0,2,0);
+  	scene.add (pointLight);
 	
 	// for HUD scene
 	sceneHUD = new THREE.Scene();
@@ -130,8 +135,7 @@ console.log ('iOS: ' + _iOSDevice)
     	},
 
   	);
-	//button2 = new Button (-halfW/2, -halfH/2, halfH/3, 'cyan'); 
-	//sceneHUD.add (button2.mesh);
+
 
 	////////////////////////////////////////////////////////////////////////////////
 	//          handle arToolkitSource
@@ -231,7 +235,7 @@ function makeRoot() {
   group.position.set(0, 0, 0);
   markerRoot.add(group);
 
-  pointer = new THREE.Mesh(new THREE.CircleGeometry( 0.15, 32, 0.95, 1), new THREE.MeshBasicMaterial({color:0x000000, side: THREE.DoubleSide}));
+  pointer = new THREE.Mesh(new THREE.CircleGeometry( 0.15, 32, 0.95, 1), new THREE.MeshPhongMaterial({color:0x424242, side: THREE.DoubleSide}));
   pointer.position.set (0, 0.01, -0.97);
   
   pointer.rotation.x = -Math.PI/2;
