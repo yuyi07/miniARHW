@@ -124,7 +124,7 @@ function addMarkerHiro () {
 		
 	let loader = new THREE.TextureLoader();
 	loader.setCrossOrigin('')
-	let texture = loader.load( 'https://i.imgur.com/J0RenHB.png' );
+	let texture = loader.load( 'https://i.imgur.com/V6KDTyp.png' );
 	
 	let material = new THREE.MeshBasicMaterial( { 
 		map: texture,
@@ -176,7 +176,6 @@ function animate() {
 	let p0 = new THREE.Vector3 (0,0,0); // the 'marker coord' of camera
 	let mw = new THREE.Matrix4();		
 	p0.applyMatrix4 (mw.getInverse(markerHiro.matrixWorld));
-
 	p0.y = 0;
 	let front = new THREE.Vector3(0,0,1);
 	let angle = p0.angleTo (front);
@@ -187,7 +186,6 @@ function animate() {
 		hulkGroup.rotation.y = angle;
 	else 
 		hulkGroup.rotation.y = -angle;
-
 */
 }
 
