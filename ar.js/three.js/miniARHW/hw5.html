@@ -214,7 +214,15 @@ function makeCannon() {
 }
 
 function computeProjectile() {
-  cannon.children[1].rotation.z = -(Math.PI/2 - theta);
+	let L = target.length();
+	theta = Math.asin(L*g/v/v)/2;
+	//console.log (L*g/v/v)
+	if (L*g/v/v > 1) {
+		$('#msg').text ('too far to hit');
+	} else {
+		$('#msg').text ('reachable')
+	}
+  	cannon.children[1].rotation.z = -(Math.PI/2 - theta);
 }
 function makeProjectile () {
 	let cTheta = Math.cos(theta);
@@ -299,15 +307,6 @@ function animate() {
 	let line = new THREE.Line(geometry, material);
 	
 
-	/* new way ...
-	vertices = [0,0,0, toKanji.x, 0, toKanji.z];
-	let geometry = new THREE.BufferGeometry();
-
-	geometry.addAttribute ('position', new THREE.Float32BufferAttribute(vertices,3));
-	const material = new THREE.LineDashedMaterial({color: 0x00ffff});
-	
-	var line = new THREE.Line (geometry, material);
-	*/
 
 	line.name = 'interMarkerLine';
 	markerHiro.add (line);
