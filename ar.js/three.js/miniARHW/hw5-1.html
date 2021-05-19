@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<!-- three.js library -->
+<script src='../examples/vendor/three.js/build/three.min.js'></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<!-- ar.js -->
+<script src="../build/ar.js"></script>
+<script>THREEx.ArToolkitContext.baseURL = '../'</script>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'>
+<div style='font-size:2em; color:cyan; position: absolute; top: 10px; width:100%; text-align: center; z-index: 1;'>
+	<a href="https://github.com/jeromeetienne/AR.js/" target="_blank">AR.js</a>
+	<br>
+	HW5
+	<p style='color:yellow' id='printDis'></p>
+	<p id='msg'></p>
+</div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="explode.js"></script>
+<script>
+
+// global variables
+var renderer, scene, camera;
+var markerKanji, markerHiro;
+var arToolKitSource, arToolKitContext;
+var _iOSDevice;
+
+var clock, connon;
+var balls = [];
+var pos, vel, force;
+
+var counter, N, angle;
+var pickables = [], mouse;
+var target, targetBall;
+var q1, q2;
+var v, g;
+var theta;
+
+
+init();
+animate();
+
+function init() {
+	// https://stackoverflow.com/questions/9038625/detect-if-device-is-ios?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+	let _iOSDevice = !!navigator.platform.match(/iPhone|iPod|iPad/);
+
+	console.log ('iOS: ' + _iOSDevice)
+
+
+	// init renderer
+	renderer	= new THREE.WebGLRenderer({
+		// antialias	: true,
+		alpha: true
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	// renderer.setPixelRatio( 1/2 );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	// init scene and camera
+	scene	= new THREE.Scene();
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Initialize a basic camera
+	//////////////////////////////////////////////////////////////////////////////////
+
+	// Create a camera
+	camera = new THREE.Camera();
+	scene.add(camera);
+
+	////////////////////////////////////////////////////////////////////////////////
+	//          handle arToolkitSource
+	////////////////////////////////////////////////////////////////////////////////
+
+	arToolkitSource = new THREEx.ArToolkitSource({
+		// to read from the webcam 
+		sourceType : 'webcam',
+
+		// to read from an image
+		// sourceType : 'image',
+		// sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',		
+
+		// to read from a video
+		// sourceType : 'video',
+		// sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/videos/headtracking.mp4',		
+	})
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	})
+	
+	// handle resize
+	window.addEventListener('resize', function(){
+		onResize()
+	})
+	function onResize(){
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if( arToolkitContext.arController !== null ){
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+	////////////////////////////////////////////////////////////////////////////////
+	//          initialize arToolkitContext
+	////////////////////////////////////////////////////////////////////////////////
+	
+	arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: THREEx.ArToolkitContext.baseURL + '../data/data/camera_para.dat',
+		detectionMode: 'mono',
+		maxDetectionRate: 30,
+		canvasWidth: 80*3,
+		canvasHeight: 60*3,
+	})
+	// initialize it
+	arToolkitContext.init(function onCompleted(){
+		// copy projection matrix to camera
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	})
+
+	var pointLight = new THREE.PointLight (0xffffff);
+  	pointLight.position.set (0,2,0);
+  	scene.add (pointLight);
+	  
+
+
+	markerHiro = addMarkerHiro();
+	scene.add (markerHiro); 
+	markerKanji = addMarkerKanji();
+	scene.add (markerKanji);
+	initSprite(markerKanji);
+	targetBall = new THREE.Mesh(new THREE.OctahedronGeometry(3), new THREE.MeshBasicMaterial({
+    color: 'cyan',
+    wireframe: true
+  }));
+
+	  //////////////////////////
+	q1 = new THREE.Quaternion(); // null rotation
+  	q2 = new THREE.Quaternion();
+  	/////////////////
+	v = 30;
+  	g = 10;
+	
+}
+
+	
+function addMarkerKanji () {
+	let markerRootKanji = new THREE.Group();
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRootKanji, {
+		type : 'pattern',
+		 patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji'
+	})
+	
+	let loader = new THREE.TextureLoader();
+	loader.setCrossOrigin('')
+	let texture = loader.load( 'https://i.imgur.com/MFZAY5Q.png' );
+	
+	let material = new THREE.MeshBasicMaterial( { 
+		map: texture,
+		transparent: true,
+		side: THREE.DoubleSide
+		} );
+	let geometry	= new THREE.PlaneGeometry(1.5,1.5);
+	let mesh	= new THREE.Mesh( geometry, material );
+	mesh.position.y	= geometry.parameters.height/4;
+	let castleGroup = new THREE.Object3D();
+	castleGroup.add (mesh);
+
+	markerRootKanji.add (castleGroup);
+
+	return markerRootKanji;
+}
+
+
+
+function addMarkerHiro(){
+	let markerRootHiro = new THREE.Group()
+
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRootHiro, {
+		type : 'pattern',
+		patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.hiro'
+	})
+
+	cannon = makeCannon();
+	markerRootHiro.add(cannon);
+	
+	let ball = new THREE.Mesh(new THREE.SphereGeometry(0.1, 0.4, 0.4), new THREE.MeshBasicMaterial({color: 'yellow',wireframe: true}));
+	balls.push(ball);
+	markerRootHiro.add (ball);
+	clock = new THREE.Clock();	
+	//// settings //////////////////////
+	let barrel = cannon.children[1]
+	barrel.rotation.z = -Math.PI / 6; // barrel angle
+	cannon.rotation.y = -Math.PI / 6;
+
+	q1 = new THREE.Quaternion(); // null rotation
+  	q2 = new THREE.Quaternion();
+	return markerRootHiro;
+}	
+function makeCannon() {
+	let cannon = new THREE.Group();
+	let body = new THREE.Mesh(new THREE.SphereGeometry(
+	0.5, 20, 20, Math.PI + Math.PI * 0.1, Math.PI * 1.8, 0, Math.PI / 2), new THREE.MeshPhongMaterial({color:0xa9a9a9, side: THREE.DoubleSide}));
+	let barrelPart = new THREE.Group();
+	let barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1, 18), new THREE.MeshPhongMaterial({color:0xa9a9a9, side: THREE.DoubleSide}));
+	barrelPart.add(barrel);
+	barrel.position.y = 0.5;
+
+	cannon.add(body, barrel);
+	return cannon;
+}
+
+function computeProjectile() {
+	let L = target.length();
+	theta = Math.asin(L*g/v/v)/2;
+	//console.log (L*g/v/v)
+	if (L*g/v/v > 1) {
+		$('#msg').text ('too far to hit');
+	} else {
+		$('#msg').text ('reachable')
+	}
+  	cannon.children[1].rotation.z = -(Math.PI/2 - theta);
+}
+function makeProjectile () {
+	let cTheta = Math.cos(theta);
+  let sTheta = Math.sin(theta);
+  let a = -g/2/v/v/cTheta/cTheta;
+  let b = v*v/g*cTheta*sTheta;
+  let c = v*v/2/g*sTheta*sTheta;
+  return makeParabola (a, b, c);
+}
+
+function makeParabola (a, b, c) {
+	let xRange = Math.sqrt(-a*c)*2/a;
+  const N = 20;
+  let dx = xRange/20;
+  
+  let points = [];
+  let x0 = b - xRange/2;
+  for (let i = 0; i <= N; i++) {
+  	let xi = x0 + i*dx;
+    let yi = a*(xi-b)*(xi-b) + c;
+    points.push (new THREE.Vector3(xi,yi,0));
+  }
+  
+  let geometry = new THREE.BufferGeometry().setFromPoints(points);
+  let parabola = new THREE.Line (geometry, new THREE.LineDashedMaterial({color:'cyan'}));
+  parabola.computeLineDistances(); // required for LineDashedMaterial
+  return parabola;
+  
+}
+
+function computeInitPosVel() {
+  let barrel = cannon.children[1];
+  const SPEED = 25;
+	vel = barrel.localToWorld (new THREE.Vector3(0,1,0)).sub (
+  barrel.localToWorld (new THREE.Vector3(0,0,0))).setLength (SPEED);
+	pos = barrel.localToWorld (new THREE.Vector3(0,1.1,0));
+	force = new THREE.Vector3(0,-10,0);
+}
+
+
+function animate() {
+	requestAnimationFrame (animate);
+	renderer.render (scene, camera);
+	
+	if( arToolkitSource.ready === false )	return
+	arToolkitContext.update( arToolkitSource.domElement )
+
+
+	let localCamera = markerKanji.worldToLocal (new THREE.Vector3(0,0,0))
+	// CYLINDRICAL billboard:
+	localCamera.y = 0;
+	
+	// to rotate (0,0,1) to localCamera [markerCoord]
+	let point = new THREE.Vector3(0,0,1);
+	let angle = point.angleTo (localCamera);
+	let axis = new THREE.Vector3();
+	axis.crossVectors(point, localCamera).normalize(); // normalization is IMPORTANT!
+	let castleGroup = markerKanji.children[0];
+	castleGroup.quaternion.setFromAxisAngle (axis, angle);
+
+	var dt = clock.getDelta();
+
+	//setTimeout (spriteAnimate, 0);
+
+
+	// remove old one and 
+	// draw a new line from Hiro to Kanji
+	markerHiro.remove (markerHiro.getObjectByName('interMarkerLine'));
+	
+	let toKanji = markerHiro.worldToLocal (markerKanji.localToWorld (new THREE.Vector3(0,0,0)));
+	
+	// old way .....	
+	var material = new THREE.LineDashedMaterial( {
+		color:0x00ffff,
+		dashSize: .1,
+		gapSize: .1
+	} );
+	var geometry = new THREE.Geometry();
+	geometry.vertices.push(new THREE.Vector3(0,0,0));
+	geometry.vertices.push(new THREE.Vector3(toKanji.x, 0, toKanji.z));
+	geometry.computeLineDistances() // must call this when the dash-line is initialized!!! 
+	let line = new THREE.Line(geometry, material);
+	
+
+
+	line.name = 'interMarkerLine';
+	markerHiro.add (line);
+////////////////////////
+
+
+		target.copy(toKanji);
+		targetBall.position.copy(target);
+
+		q1.copy(q2);  // save current (old) orientation
+		q2.setFromUnitVectors(new THREE.Vector3(1, 0, 0), target.clone().normalize());  // compute new oriention
+
+		N = 100;
+		counter = 0;
+	
+	
+
+	computeProjectile();
+	let parabola = makeProjectile();
+	parabola.name = 'projectile';
+	markerHiro.remove (markerHiro.getObjectByName('projectile'));
+	markerHiro.add(parabola);
+	parabola.quaternion.copy (q2);
+
+	if (counter > N) {
+    return;
+  }
+
+  if (counter < N) {
+    let alpha = counter / N;
+    let qm = q1.clone();
+    qm.slerp(q2, alpha);
+    cannon.quaternion.copy(qm);
+    ++counter;
+  }
+
+  if (pos === undefined) {
+  	computeInitPosVel();
+  	return;
+  }
+  if (pos.y < 0)
+  	return;
+
+
+	// Euler's method
+  vel.add (force.clone().multiplyScalar(dt));
+  pos.add (vel.clone().multiplyScalar(dt));
+  ball.position.copy (pos);
+
+
+}
+
+</script></body>
