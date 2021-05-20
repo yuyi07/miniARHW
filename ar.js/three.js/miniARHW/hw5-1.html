@@ -128,13 +128,20 @@ function addMarkerKanji(){
 		 patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji'
 	})
 	
-	const geometry = new THREE.CylinderGeometry( .25, .25, .5, 32 );
-	const material = new THREE.MeshPhongMaterial({color:0xF4DD34, side: THREE.DoubleSide});
-	const cylinder = new THREE.Mesh( geometry, material );
-
-	cylinder.position.y	= geometry.parameters.height/4;
+	let loader = new THREE.TextureLoader();
+	loader.setCrossOrigin('')
+	let texture = loader.load( 'https://i.imgur.com/MFZAY5Q.png' );
+	
+	let material = new THREE.MeshBasicMaterial( { 
+		map: texture,
+		transparent: true,
+		side: THREE.DoubleSide
+		} );
+	let geometry	= new THREE.PlaneGeometry(1,1);
+	let mesh	= new THREE.Mesh( geometry, material );
+	mesh.position.y	= geometry.parameters.height/4;
 	//let castle = new THREE.Object3D();
-	castle.add (cylinder);
+	castle.add (mesh);
 
 	markerRootKanji.add (castle);
 	return markerRootKanji;
@@ -149,7 +156,7 @@ function addMarkerHiro(){
 	})
 	cannon = makeCannon();
 	markerRoot.add (cannon);
-	ball = new THREE.Mesh (new THREE.CylinderGeometry(.025,0.07,0.25,20), new THREE.MeshPhongMaterial({color:0xC2C3C9}));
+	ball = new THREE.Mesh (new THREE.CylinderGeometry(.025,0.07,0.25,20), new THREE.MeshPhongMaterial({color:0x0088ff}));
     
 	markerRoot.add (ball);
 	clock = new THREE.Clock();
