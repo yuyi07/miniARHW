@@ -24,7 +24,7 @@ function buildSprite(texMat, markerGroup) {
 
     sprite = new THREE.Mesh(geometry, texMat);
     sprite.rotation.x = Math.PI / 2;
-    sprite.position.y = 1.1;
+    sprite.position.y = 0;
     markerGroup.add(sprite);
 }
 
